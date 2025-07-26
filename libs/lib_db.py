@@ -1,6 +1,7 @@
 import typing
 import pymysql
 
+
 class OpenDB:
     def __enter__(self):
         self.connector = pymysql.connect(
@@ -19,7 +20,8 @@ class OpenDB:
         self.cursor.close()
 
 class CRUD:
-    def get_query_insert(self, table: str, fields: str="*", vals: str = ""):
+    @staticmethod
+    def get_query_insert(table: str, fields: str="*", vals: str = ""):
         """
         C for CRUD. combine query command based on arguments.
         :param table: data table name
@@ -30,7 +32,8 @@ class CRUD:
         result = f"INSERT INTO {table} {fields} VALUES {vals}"
         return result
 
-    def get_query_select(self, table: str, fields: str="*", filters: str = ""):
+    @staticmethod
+    def get_query_select(table: str, fields: str="*", filters: str = ""):
         """
         R for CRUD. combine query command based on arguments.
         :param table: data table name
@@ -43,7 +46,8 @@ class CRUD:
             result += f" WHERE {filters}"
         return result
 
-    def get_query_update(self, table: str, fields: str="*", filters: str = ""):
+    @staticmethod
+    def get_query_update(table: str, fields: str="*", filters: str = ""):
         """
         U for CRUD. combine query command based on arguments.
         :param table: data table name
@@ -54,6 +58,7 @@ class CRUD:
         result = f"UPDATE {table} SET {fields} WHERE {filters}"
         return result
 
+    @staticmethod
     def get_query_delete(table: str, filters: str = ""):
         """
         D for CRUD. combine query command based on arguments.
@@ -67,5 +72,6 @@ class CRUD:
 
 if __name__ == "__main__":
     with OpenDB() as database:
-        database.cursor.execute('DESC assets')
+        _select = CRUD.get_query_select(table="assets")
+        database.cursor.execute(_select)
         print(database.cursor.fetchall())
