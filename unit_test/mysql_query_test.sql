@@ -119,3 +119,16 @@ select * from assets;
 select * from texture_library.asset_metadata;
 
 show triggers;
+
+create table if not exists mapping_asset_tag (
+	id int auto_increment primary key,
+    asset_id int,
+    tag_id int,
+    
+    foreign key (asset_id) references assets(id) on delete cascade,
+    foreign key (tag_id) references asset_tag(id) on delete cascade
+)  ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+show tables;
+
+desc assets;
