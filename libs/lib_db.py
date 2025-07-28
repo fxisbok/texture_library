@@ -16,6 +16,9 @@ class OpenDB:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            print(f'DB Error: {exc_type.__name__}: {exc_val}\nContext rollback.')
+            self.connector.rollback()
         self.cursor.execute('COMMIT')
         self.cursor.close()
 
@@ -40,9 +43,8 @@ class CRUD:
         def table(self, name: str) -> None:
             self.__table = name
 
-        # columns는 이제 tuple이 아닌 list of strings를 받습니다.
         @property
-        def columns(self) -> list:
+        def columns(self) -> list[str]:
             return self.__columns
 
         @columns.setter
@@ -54,10 +56,8 @@ class CRUD:
             else:
                 raise TypeError("Columns must be a string, tuple, or list of strings.")
 
-            # 컬럼 개수에 맞춰 플레이스홀더 (%s)를 생성합니다.
             self.__values_placeholders = ["%s"] * len(self.__columns)
 
-        # values는 이제 실제 값들을 직접 받습니다.
         @property
         def actual_values(self) -> list:
             return self.__actual_values
@@ -67,17 +67,15 @@ class CRUD:
             if isinstance(vals, (tuple, list)):
                 self.__actual_values = list(vals)
             else:
-                # 단일 값이라도 리스트에 담도록 강제
                 self.__actual_values = [vals]
 
             if len(self.__actual_values) != len(self.__columns):
                 raise ValueError("Number of values must match the number of columns.")
 
-        # get_query가 이제 쿼리 문자열과 값 튜플을 반환합니다.
         def get_query(self, table: str, columns: str | tuple | list, values: tuple | list) -> tuple[str, tuple]:
             self.table = table
-            self.columns = columns  # columns setter가 values_placeholders를 초기화합니다.
-            self.actual_values = values  # actual_values setter가 값 개수를 검증합니다.
+            self.columns = columns
+            self.actual_values = values
 
             columns_str = f"({', '.join(self.__columns)})"
             values_str = f"({', '.join(self.__values_placeholders)})"
@@ -121,8 +119,7 @@ class CRUD:
             else:
                 raise TypeError("Columns must be a string, tuple, or list of strings.")
 
-        # where는 이제 (조건 문자열, 값 튜플/리스트)의 리스트를 받습니다.
-        # 예: [("column1 = %s", "value1"), ("column2 > %s", 10)]
+        # [("column1 = %s", "value1"), ("column2 > %s", 10)]
         @property
         def where_clauses(self) -> list:
             return list(zip(self.__where_conditions_str, self.__where_values))
@@ -229,11 +226,8 @@ class CRUD:
         def table(self, name: str) -> None:
             self.__table = name
 
-        # set_data는 이제 딕셔너리를 받습니다. (컬럼: 값)
         @property
         def set_data(self) -> dict:
-            # 역으로 딕셔너리 형태로 반환하기는 어려우므로, 이 속성은 직접 사용하지 않고 setter만 활용하는 것이 좋습니다.
-            # 내부적으로는 self.__set_clauses_str과 self.__set_values를 사용합니다.
             return {}  # 더미 반환
 
         @set_data.setter
@@ -246,7 +240,6 @@ class CRUD:
                 self.__set_clauses_str.append(f"{col} = %s")
                 self.__set_values.append(val)
 
-        # where는 SELECT와 동일하게 (조건 문자열, 값 튜플/리스트)의 리스트를 받습니다.
         @property
         def where_clauses(self) -> list:
             return list(zip(self.__where_conditions_str, self.__where_values))
@@ -303,7 +296,6 @@ class CRUD:
         def table(self, name: str) -> None:
             self.__table = name
 
-        # where는 SELECT와 동일하게 (조건 문자열, 값 튜플/리스트)의 리스트를 받습니다.
         @property
         def where_clauses(self) -> list:
             return list(zip(self.__where_conditions_str, self.__where_values))
@@ -349,22 +341,26 @@ def add_assets(name: str):
     #     fields='("asset_name")',
     #     vals=(name),
     # )
-    ins = INSERT()
-    asset_create_query = ins.get_query(
+    ins = CRUD.INSERT()
+    asset_create_query, values = ins.get_query(
         "assets",
         "asset_name",
         name
     )
     print("commands:",asset_create_query)
     with OpenDB() as db:
-        db.cursor.execute(asset_create_query)
+        db.cursor.execute(asset_create_query, values)
         print(db.cursor.fetchall())
+        print(asset_create_query, values)
 
 
 
 if __name__ == "__main__":
-    add_assets("python_test_01")
-    # with OpenDB() as database:
-    #     _select = CRUD.get_query_select(table="assets")
-    #     database.cursor.execute(_select)
-    #     print(database.cursor.fetchall())
+    add_assets("python_test_02")
+    with OpenDB() as database:
+        try:
+            pass
+        except pymysql.Error as err:
+            database.connector.rollback()
+            print(f"DB Error: {err}")
+            raise err
