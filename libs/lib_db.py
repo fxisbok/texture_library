@@ -100,19 +100,6 @@ def add_assets(name: str):
         print(db.cursor.fetchall())
 
 
-
-def crud_insert(table: str, columns: tuple, vals: tuple, filters: tuple):
-    # INSERT INTO assets(asset_name, asset_id) VALUES ('test_asset_04', 3)
-    query = f"INSERT INTO {table}("
-    for c in columns:
-        if isinstance(columns, str):
-            query += f"{columns})"
-            break
-        if columns[-1] == c:
-            query += f"{c})"
-            break
-        query += f"{c},"
-
 # TODO :: 원시 클래스를 만들고, 이를 상속받아 디벨롭 해야할듯
 class INSERT:
     def __init__(self):
@@ -164,6 +151,41 @@ class INSERT:
         result = f"INSERT INTO {self.table}{self.columns} VALUES {self.values}"
         return result
 
+class SELECT:
+    def __init__(self):
+        self.__table =  str()
+        self.__columns = str()
+        self.__filters = str()
+
+    @property
+    def table(self) -> str:
+        return self.__table
+
+    @table.setter
+    def table(self, name: str):
+        self.__table = name
+
+    @property
+    def columns(self) -> str:
+        return self.__columns
+
+    @columns.setter
+    def columns(self, colm: str|tuple) -> str:
+        if isinstance(colm, str):
+            self.__columns = f"({colm})"
+        else:
+            self.__columns = str(colm)
+
+    @property
+    def filters(self) -> str:
+        return self.__filters
+
+    @filters.setter
+    def filters(self, filter_expression: str) -> str:
+        self.__filters = filter_expression
+
+    def get_query(self, ):
+        pass
 
 if __name__ == "__main__":
     add_assets("python_test_01")
